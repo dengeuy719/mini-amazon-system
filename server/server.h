@@ -1,20 +1,16 @@
 #ifndef _SERVER_H
 #define _SERVER_H
 
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <pqxx/pqxx>
 #include <iostream>
 #include <string>
 #include <thread>
 
-#include "ThreadSafe_queue.h"
+#include "warehouse.h"
+#include "gpbCommunication.h"
 #include "AResponseHandler.h"
 #include "AUResponseHandler.h"
-#include "lib/build/gen/world_amazon.pb.h"
-#include "lib/build/gen/amazon_ups.pb.h"
-#include "warehouse.h"
-#include "Order.h"
+#include "ThreadSafe_queue.h"
 
 using namespace std;
 using namespace pqxx;
@@ -55,13 +51,14 @@ class Server {
         //connect ups
         void connectUps();
         void initAUConnectCommand(AUCommands & aucommand);
-        void AUHandshake(AUCommands & aucommand, UACommands & uacommand);
+        //void AUHandshake(AUCommands & aucommand, UACommands & uacommand);
 
         void processReceivedWorldMessages();
         void processReceivedUpsMessages();
         void sendMessagesToWorld();
         void sendMessagesToUps();
 
+        void processOrderFromWeb(const int serverFD);
 
         Server();
         Server(Server &) = delete;
@@ -83,11 +80,14 @@ class Server {
         ThreadSafe_queue<AUCommands> upsQueue;
 
         //order queue. save orders for later processing
-        queue<Order> orderQueue;
+        queue<int> orderQueue;
         mutex order_lck;
+        size_t requireSeqNum(); 
+        vector<Warehouse> getWhs() { return whs; }
+        int getWorldID(){return worldID;}
 
         static Server & getInstance();
-        size_t requireSeqNum();
+        
         static connection * connectDB(string dbName, string userName, string password);
         static void disConnectDB(connection * C);
         void run();

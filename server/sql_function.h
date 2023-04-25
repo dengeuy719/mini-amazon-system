@@ -7,10 +7,11 @@
 #include <string>
 
 #include "Order.h"
+#include "myException.h"
 
 using namespace pqxx;
 using namespace std;
-
+void insertSampleData(connection* C);
 void createTable(connection * C, const string fileName);
 void dropAllTable(connection * C);
 bool checkInventory(connection * C, int itemId, int itemAmount, int whID, int & version);

@@ -3,10 +3,9 @@
 
 #include <vector>
 
-#include "OrderProcess.h"
-#include "server.h"
-#include "gpbCommunication.h"
 
+#include "lib/build/gen/world_amazon.pb.h"
+#include "lib/build/gen/amazon_ups.pb.h"
 using namespace std;
 
 class AUResponseHandler {

@@ -1,13 +1,35 @@
 #include "sql_function.h"
 
-#include "exception.h"
 
+
+void insertSampleData(connection* C) {
+    try {
+        work W(*C);
+
+        // Insert data into USER_PROFILE
+        W.exec("INSERT INTO USER_PROFILE (USER_NAME, ADDRX, ADDRY, UPSID) VALUES (1, '123', '456', 'UPS001'), (2, '789', '101', 'UPS002');");
+
+        // Insert data into PRODUCT
+        W.exec("INSERT INTO PRODUCT (PRODUCT_ID, PRODUCT_NAME, PRODUCT_DESC, PRICE, CATALOG) VALUES (1, 'Product A', 'Description A', 19.99, 'Electronics'), (2, 'Product B', 'Description B', 29.99, 'Home Appliances');");
+
+        // Insert data into ORDER
+        W.exec("INSERT INTO \"ORDER\" (ORDER_ADDR_X, ORDER_ADDR_Y, TIME, ORDER_OWNER_ID, UPS_ID, PRICE) VALUES (111, 222, '12:34:56', 1, 1001, 49.99);");
+
+        // Insert data into PACKAGE
+        W.exec("INSERT INTO PACKAGE (PACKAGE_DESC, PACKAGE_OWNER_ID, AMOUNT, PRODUCT_ID, WH_ID, ORDER_ID, STATUS) VALUES ('Sample Package 1', 1, 3, 1, 101, 1, 'packing');");
+
+        W.commit();
+    } catch (const exception &e) {
+        cerr << e.what() << endl;
+        return;
+    }
+}
 /*
     read sql command from the file and then create tabel using connection *C.
     If fails, it will throw exception.
 */
 void createTable(connection * C, string fileName) {
-  cout << "create new Tables..." << endl;
+  cout << "Starting create new Tables..." << endl;
   string sql;
   ifstream ifs(fileName.c_str(), ifstream::in);
   if (ifs.is_open() == true) {
@@ -22,19 +44,23 @@ void createTable(connection * C, string fileName) {
   work W(*C);
   W.exec(sql);
   W.commit();
+  cout << "Finishing create new Tables..." << endl;
 }
 
 /*
     Drop all the table in the DataBase. Using for test.
 */
-void dropAllTable(connection * C) {
+void dropAllTable(connection *C) {
+  cout << "Starting Drop all the existed table..." << endl;
   work W(*C);
-  string sql = "DROP TABLE IF EXISTS symbol;DROP TABLE IF EXISTS account;DROP TABLE "
-               "IF EXISTS orders;";
 
-  W.exec(sql);
+  W.exec("DROP TABLE IF EXISTS PACKAGE;");
+  W.exec("DROP TABLE IF EXISTS \"ORDER\";");
+  W.exec("DROP TABLE IF EXISTS PRODUCT;");
+  W.exec("DROP TABLE IF EXISTS USER_PROFILE;");
+
   W.commit();
-  cout << "Drop all the existed table..." << endl;
+  cout << "Finishing Drop all the existed table..." << endl;
 }
 
 /*
@@ -171,7 +197,7 @@ void decreaseInventory(connection * C, int whID, int count, int productId, int v
   result Updates(W.exec(sql.str()));
   result::size_type rows = Updates.affected_rows();
   if (rows == 0) {
-    throw VersionErrorException(
+    throw MyException(
         "Invalid update: version of this order does not match.\n");
   }
   W.commit();

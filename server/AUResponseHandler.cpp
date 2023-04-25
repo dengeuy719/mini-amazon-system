@@ -1,4 +1,7 @@
 #include "AUResponseHandler.h"
+#include "OrderProcess.h"
+#include "gpbCommunication.h"
+#include "server.h"
 
 AUResponseHandler::AUResponseHandler(const UACommands & r) {
   for (int i = 0; i < r.connectedtoworld_size(); i++) {

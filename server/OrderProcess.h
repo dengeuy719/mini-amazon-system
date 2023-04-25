@@ -1,32 +1,33 @@
-#ifndef _ORDER_PROCESS_H
-#define _ORDER_PROCESS_H
-#include "server.h"
-//#include "sql_function.h"
+#ifndef _ORDERPROCESS_H
+#define _ORDERPROCESS_H
+
+#include <vector>
+#include <string>
+
 #include "warehouse.h"
-
-
-void parseOrder(string msg, int client_fd);
-int selectWareHouse(const vector<Warehouse> & whList, const Order & order);
-void processOrder(const Order& order); 
-
-void processPurchaseMore(APurchaseMore r);
-void processPacked(APacked r);
-void processLoaded(ALoaded r);
+#include "lib/build/gen/world_amazon.pb.h"
+#include "lib/build/gen/amazon_ups.pb.h"
 
 
 void pushWorldQueue(const ACommands& acommand, int seqNum);
 void pushUpsQueue(const AUCommands& aucommand, int seqNum);
-void packOrder(Order order);
-void callATruck(Order order);
+
+//void parseOrder(string msg, int client_fd);
+int selectWareHouse(const vector<Warehouse> & whList, int order_addr_x, int order_addr_y);
+void processOrder(string msg, int orderID); 
+void packOrder(int orderID, int whID);
+void requestTruck(int orderID, int whID);
 
 //updated
 //amazon-world
-
+void processPurchaseMore(const APurchaseMore & r);
+void processPacked(const APacked & r);
+void processLoaded(const ALoaded & r);
 //amazon-ups
-void processUAConnectedToWorld();
-void processUADestinationUpdated();
-void processUATruckArrived();
-void processUAOrderDeparture();
-void processUAOrderDelivered();
+void processUAConnectedToWorld(const UAConnectedToWorld & r);
+void processUADestinationUpdated(const UADestinationUpdated & r);
+void processUATruckArrived(const UATruckArrived & r);
+void processUAOrderDeparture(const UAOrderDeparture & r);
+void processUAOrderDelivered(const UAOrderDelivered & r);
 
 #endif

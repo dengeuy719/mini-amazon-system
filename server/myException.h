@@ -1,5 +1,5 @@
-#ifndef _MY_EXCEPTION_HPP_
-#define _MY_EXCEPTION_HPP_
+#ifndef _MYEXCEPTION_HPP_
+#define _MYEXCEPTION_HPP_
 
 #include <string>
 #include <stdexcept>

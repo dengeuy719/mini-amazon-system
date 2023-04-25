@@ -1,7 +1,11 @@
 #include "server.h"
-#include "myException.h"
+
+
 #include "socket.h"
-#include "gpbCommunication.h"
+#include "myException.h"
+#include "sql_function.h"
+#include "OrderProcess.h"
+
 
 connection * Server::connectDB(string dbName, string userName, string password) {
   connection * C = new connection("dbname=" + dbName + " user=" + userName +
@@ -12,24 +16,39 @@ connection * Server::connectDB(string dbName, string userName, string password) 
   if (!C->is_open()) {
     throw MyException("Cannot open database.");
   }
-
+  
   return C;
 }
 
+
+void Server::disConnectDB(connection * C) {
+  C->disconnect();
+}
+
+
 Server::Server() :
-  whNum(5), worldHost("127.0.0.1"), worldPort("23456"),
-  worldID(), upsHost(""), upsPort(""), webPort(""),
+  whNum(5), worldHost("vcm-30541.vm.duke.edu"), worldPort("23456"),
+  worldID(), upsHost(""), upsPort(""), webPort("8888"),
   seqNum(0)
 {
     cout << "Constructing server" << endl;
-    // unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
-    // setTableDefaultValue(C.get());
-    // C->disconnect();
+    //unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
+    connection * C = new connection("dbname=mini_amazon user=postgres password=passw0rd port=5432");  
+//   connection * C =
+//       new connection("host=db port=5432 dbname=" + dbName + " user=" + userName +
+//                      " password=" + password);  // use in docker
+    if (!C->is_open()) {
+      throw MyException("Cannot open database.");
+    }
+    dropAllTable(C);
+    createTable(C, "./database/tables.sql");
+    //insertSampleData(C);  //for testing
+    //setTableDefaultValue(C.get());
+    C->disconnect();
     
     for (size_t i = 0; i < MAX_SEQNUM; ++i) {
       seqNumTable.emplace_back(false);
     }
-
 }
 
 Server & Server::getInstance() {
@@ -54,10 +73,6 @@ void Server::initializeUpsCommunication() {
   connect to world
 */
 void Server::initAconnect(AConnect & aconnect) {
-  //init worldID
-  // if (worldID != -1) {
-  //   aconnect.set_worldid(worldID);
-  // }
   //init initwh
   for (int i = 0; i < whNum; ++i) {
     AInitWarehouse * w = aconnect.add_initwh();
@@ -160,36 +175,45 @@ void Server::connectUps() {
   handle send/revc gpb cmds
 */
 void Server::processReceivedWorldMessages() {
-  AResponses ar;
-  if (!recvMesgFrom<AResponses>(ar, worldReader.get())) {
-    return;
+  while(true) {
+    AResponses ar;
+    if (!recvMesgFrom<AResponses>(ar, worldReader.get())) {
+      return;
+    }
+    AResponseHandler handler(ar);
+    handler.handle();
   }
-  AResponseHandler handler(ar);
-  handler.handle();
 }
 
 void Server::processReceivedUpsMessages() {
-  UACommands ar;
-  if (!recvMesgFrom<UACommands>(ar, upsReader.get())) {
-    return;
+  while(true) {
+    UACommands ar;
+    if (!recvMesgFrom<UACommands>(ar, upsReader.get())) {
+      return;
+    }
+    AUResponseHandler handler(ar);
+    handler.handle();
   }
-  AUResponseHandler handler(ar);
-  handler.handle();
 }
 
 void Server::sendMessagesToWorld() {
-  ACommands msg;
-  worldQueue.wait_and_pop(msg);
-  if (!sendMesgTo(msg, worldWriter.get())) {
-    throw MyException("fail to send message in world.");
+  while(true) {
+    ACommands msg;
+    worldQueue.wait_and_pop(msg);
+    if (!sendMesgTo(msg, worldWriter.get())) {
+      throw MyException("fail to send message in world.");
+    }
   }
+
 }
 
 void Server::sendMessagesToUps() {
-  AUCommands msg;
-  upsQueue.wait_and_pop(msg);
-  if (!sendMesgTo(msg, upsWriter.get())) {
-    throw MyException("fail to send message in ups.");
+  while(true) {
+    AUCommands msg;
+    upsQueue.wait_and_pop(msg);
+    if (!sendMesgTo(msg, upsWriter.get())) {
+      throw MyException("fail to send message in ups.");
+    }
   }
 }
 
@@ -203,29 +227,46 @@ size_t Server::requireSeqNum() {
   return num;
 }
 
-
-void Server::disConnectDB(connection * C) {
-  C->disconnect();
+/*
+  Web communication
+*/
+void Server::processOrderFromWeb(const int serverFD) {
+    // wait to accept connection.
+    cout << "processOrderFromWeb.." << endl;
+    while(true) {
+      int webFD;
+      string clientIP;
+      string msg;
+      try {
+        webFD = serverAccept(serverFD, clientIP);
+        msg = recvMsg(webFD);
+        processOrder(msg, webFD);
+      }
+      catch (const std::exception & e) {
+        std::cerr << e.what() << '\n';
+      }
+    }
+    cout << "finishing processOrderFromWeb"<<endl;
 }
 
 void Server::run() {
   try{
     connectWorld();
     //need test
-    connectUps();
-    //connectWeb();
-    while (true) {
-      std::thread recvWorldThread(&Server::processReceivedWorldMessages, this);
-      std::thread recvUpsThread(&Server::processReceivedUpsMessages, this);
-      std::thread sendWorldThread(&Server::sendMessagesToWorld, this);
-      std::thread sendUpsThread(&Server::sendMessagesToUps, this);
-      recvWorldThread.join();
-      recvUpsThread.join();
-      sendWorldThread.join();
-      sendUpsThread.join();
-    }
-
-
+    //connectUps();
+    //connectWeb;
+    //cout << "starting"
+    int serverFD = buildServer(webPort);
+    processOrderFromWeb(serverFD);
+    
+    thread recvWorldThread(&Server::processReceivedWorldMessages, this);
+    recvWorldThread.detach();
+    // thread recvUpsThread(&Server::processReceivedUpsMessages, this);
+    // recvUpsThread.detach();
+    thread sendWorldThread(&Server::sendMessagesToWorld, this);
+    sendWorldThread.detach();
+    // thread sendUpsThread(&Server::sendMessagesToUps, this);
+    // sendUpsThread.detach();
   }
   catch (const std::exception & e) {
     cerr << e.what() << endl;;

@@ -1,4 +1,7 @@
 #include "AResponseHandler.h"
+#include "OrderProcess.h"
+#include "gpbCommunication.h"
+#include "server.h"
 
 AResponseHandler::AResponseHandler(const AResponses & r) {
   for (int i = 0; i < r.arrived_size(); i++) {
@@ -48,6 +51,7 @@ bool AResponseHandler::checkExecutedAndRecordIt(int seqNum) {
     use different threads to handle different type of responses, and ack those messages.
 */
 void AResponseHandler::handle() {
+  cout << "Begin handling AResponse.."<< endl;
   // ACK responses to world.
   ACommands ac;
   for (int i = 0; i < seqNums.size(); i++) {

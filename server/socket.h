@@ -10,10 +10,13 @@
 #include <cstring>
 #include <iostream>
 #include <string>
+#include <vector>
 
 using namespace std;
 
 int socketConnect(const string & hostName, const string & portNum);
 int buildServer(const string & portNum);
 int serverAccept(const int serverFD, string & clientIp);
+void sendMsg(int socket_fd, const void * buf, int len);
+string recvMsg(int socket_fd);
 #endif

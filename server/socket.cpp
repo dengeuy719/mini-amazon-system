@@ -1,6 +1,7 @@
 #include "socket.h"
 #include "myException.h"
 
+
 int socketConnect(const string & hostName, const string & portNum) {
   int status;
   struct addrinfo host_info;
@@ -104,4 +105,37 @@ int serverAccept(int serverFd, string & clientIp) {
   clientIp = inet_ntoa(addr->sin_addr);
 
   return client_connection_fd;
+}
+
+/*
+  send msg to the given socket. If it fails, it will throw exception
+  and close socket.
+*/
+void sendMsg(int socket_fd, const void * buf, int len) {
+  if (send(socket_fd, buf, len, 0) < 0) {
+    close(socket_fd);
+    throw MyException("fail to send msg.");
+  }
+}
+
+/*
+  receive msg from the given socket. Function will return received message directly.
+  If it fails, it will throw exception and close socket.
+*/
+string recvMsg(int socket_fd) {
+  char buffer[65536]={0};
+  memset(buffer,65536,0);
+  //char[65536] buffer={0};
+
+  int len = recv(socket_fd, buffer, sizeof(buffer), 0);
+  cout<<buffer<<" aaa"<<endl;
+  if (len <= 0) {
+    close(socket_fd);
+    std::cerr << "len: " << len << endl;
+    std::cerr << "errno: " << errno << endl;
+    throw MyException("fail to accept msg.");
+  }
+
+  string msg(buffer);
+  return msg;
 }
