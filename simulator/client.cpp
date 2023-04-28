@@ -3,7 +3,7 @@
 int main() {
 
 
-    string host = "67.159.94.75";
+    string host = "vcm-30541.vm.duke.edu";
     string port = "8888";
 
     // Connect to the server
@@ -27,7 +27,8 @@ int main() {
     // Send an orderID as a message
     string orderID = "1";
     sendMsg(socket_fd, orderID.c_str(), sizeof(orderID));
-
+    string res = recvMsg(socket_fd);
+    cout << "recv: "<< res << endl;
     // Close the socket
     close(socket_fd);
 

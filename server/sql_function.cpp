@@ -15,7 +15,7 @@ void insertSampleData(connection* C) {
         W.exec("INSERT INTO \"ORDER\" (ORDER_ADDR_X, ORDER_ADDR_Y, TIME, ORDER_OWNER_ID, UPS_ID, PRICE) VALUES (111, 222, '12:34:56', 1, 1001, 49.99);");
         W.exec("INSERT INTO \"ORDER\" (ORDER_ADDR_X, ORDER_ADDR_Y, TIME, ORDER_OWNER_ID, UPS_ID, PRICE) VALUES (333, 444, '22:34:56', 2, 1002, 99.99);");
         // Insert data into PACKAGE
-        W.exec("INSERT INTO PACKAGE (PACKAGE_DESC, PACKAGE_OWNER_ID, AMOUNT, PRODUCT_ID, WH_ID, ORDER_ID, STATUS) VALUES ('Sample Package 1', 1, 3, 1, 101, 1, 'packing');");
+        W.exec("INSERT INTO PACKAGE (PACKAGE_DESC, PACKAGE_OWNER_ID, AMOUNT, PRODUCT_ID, WH_ID, ORDER_ID, STATUS) VALUES ('Sample Package 1', 1, 3, 1, 1, 1, 'packing');");
 
         W.commit();
     } catch (const exception &e) {

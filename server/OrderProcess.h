@@ -9,11 +9,13 @@
 #include "lib/build/gen/amazon_ups.pb.h"
 
 
-void pushWorldQueue(const ACommands& acommand, int seqNum);
-void pushUpsQueue(const AUCommands& aucommand, int seqNum);
+// void pushWorldQueue(const ACommands& acommand, int seqNum);
+// void pushUpsQueue(const AUCommands& aucommand, int seqNum);
+void pushUpsQueue(AUCommands& aucommand);
+void pushWorldQueue(ACommands& acommand);
 
 //void parseOrder(string msg, int client_fd);
-int selectWareHouse(const vector<Warehouse> & whList, int order_addr_x, int order_addr_y);
+int selectWareHouse(const vector<Warehouse> & whList);
 void processOrder(string msg, int orderID); 
 void packOrder(int orderID, int whID);
 void requestTruck(int orderID, int whID);
