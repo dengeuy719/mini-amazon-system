@@ -8,13 +8,12 @@ void insertSampleData(connection* C) {
 
         // Insert data into USER_PROFILE
         W.exec("INSERT INTO USER_PROFILE (USER_NAME, ADDRX, ADDRY, UPSID) VALUES (1, '123', '456', 'UPS001'), (2, '789', '101', 'UPS002');");
-
         // Insert data into PRODUCT
         W.exec("INSERT INTO PRODUCT (PRODUCT_ID, PRODUCT_NAME, PRODUCT_DESC, PRICE, CATALOG) VALUES (1, 'Product A', 'Description A', 19.99, 'Electronics'), (2, 'Product B', 'Description B', 29.99, 'Home Appliances');");
 
         // Insert data into ORDER
         W.exec("INSERT INTO \"ORDER\" (ORDER_ADDR_X, ORDER_ADDR_Y, TIME, ORDER_OWNER_ID, UPS_ID, PRICE) VALUES (111, 222, '12:34:56', 1, 1001, 49.99);");
-
+        W.exec("INSERT INTO \"ORDER\" (ORDER_ADDR_X, ORDER_ADDR_Y, TIME, ORDER_OWNER_ID, UPS_ID, PRICE) VALUES (333, 444, '22:34:56', 2, 1002, 99.99);");
         // Insert data into PACKAGE
         W.exec("INSERT INTO PACKAGE (PACKAGE_DESC, PACKAGE_OWNER_ID, AMOUNT, PRODUCT_ID, WH_ID, ORDER_ID, STATUS) VALUES ('Sample Package 1', 1, 3, 1, 101, 1, 'packing');");
 

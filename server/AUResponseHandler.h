@@ -21,7 +21,7 @@ class AUResponseHandler {
   AUResponseHandler(const UACommands & r);
   ~AUResponseHandler() {}
   void handle();
-
+  void printAUResponse();
  private:
   bool checkExecutedAndRecordIt(int seqNum);
 };

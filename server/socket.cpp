@@ -128,7 +128,6 @@ string recvMsg(int socket_fd) {
   //char[65536] buffer={0};
 
   int len = recv(socket_fd, buffer, sizeof(buffer), 0);
-  cout<<buffer<<" aaa"<<endl;
   if (len <= 0) {
     close(socket_fd);
     std::cerr << "len: " << len << endl;

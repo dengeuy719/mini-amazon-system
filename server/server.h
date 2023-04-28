@@ -57,7 +57,8 @@ class Server {
         void processReceivedUpsMessages();
         void sendMessagesToWorld();
         void sendMessagesToUps();
-
+        void printAMessage(const ACommands & msg);
+        void printAUMessage(const AUCommands & msg);
         void processOrderFromWeb(const int serverFD);
 
         Server();

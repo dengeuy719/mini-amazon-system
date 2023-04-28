@@ -26,6 +26,21 @@ AResponseHandler::AResponseHandler(const AResponses & r) {
   }
 }
 
+void AResponseHandler::printAResponse() {
+    if(apurchasemores.size()) cout << "APurchaseMore: "  << apurchasemores.size()  << endl;
+    if(apackeds.size()) cout << "APacked: "  << apackeds.size()  << endl;
+    if(aloadeds.size()) cout << "ALoaded: "  << aloadeds.size()  << endl;
+    if(seqNums.size()){
+      cout << "acks: "  << seqNums.size()<< " : ";
+      for(auto ack : seqNums) {
+        cout << ack << " ";
+      }
+      cout << endl;
+    }
+
+    cout << "---- finish receving ACommands ------" << endl;
+}
+
 /*
   check whether given seqNum has been executed.If yes, return true,
   else return false. If given seqNum is not executed, record it in 
@@ -51,7 +66,6 @@ bool AResponseHandler::checkExecutedAndRecordIt(int seqNum) {
     use different threads to handle different type of responses, and ack those messages.
 */
 void AResponseHandler::handle() {
-  cout << "Begin handling AResponse.."<< endl;
   // ACK responses to world.
   ACommands ac;
   for (int i = 0; i < seqNums.size(); i++) {

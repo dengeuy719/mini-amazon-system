@@ -28,7 +28,7 @@ void Server::disConnectDB(connection * C) {
 
 Server::Server() :
   whNum(5), worldHost("vcm-30541.vm.duke.edu"), worldPort("23456"),
-  worldID(), upsHost(""), upsPort(""), webPort("8888"),
+  worldID(), upsHost(""), upsPort("9090"), webPort("8888"),
   seqNum(0)
 {
     cout << "Constructing server" << endl;
@@ -42,7 +42,7 @@ Server::Server() :
     }
     dropAllTable(C);
     createTable(C, "./database/tables.sql");
-    //insertSampleData(C);  //for testing
+    insertSampleData(C);  //for testing
     //setTableDefaultValue(C.get());
     C->disconnect();
     
@@ -60,11 +60,15 @@ Server & Server::getInstance() {
   init gpb buffer ptrs
 */
 void Server::initializeWorldCommunication() {
+  // unique_ptr<gpbIn> worldReader(new gpbIn(worldFD));
+  // unique_ptr<gpbOut> worldWriter(new gpbOut(worldFD));
   worldReader = make_unique<gpbIn>(worldFD);
   worldWriter = make_unique<gpbOut>(worldFD);
 }
 
 void Server::initializeUpsCommunication() {
+  // unique_ptr<gpbIn> upsReader(new gpbIn(upsFD));
+  // unique_ptr<gpbOut> upsWriter(new gpbOut(upsFD));
   upsReader = make_unique<gpbIn>(upsFD);
   upsWriter = make_unique<gpbOut>(upsFD);
 }
@@ -79,7 +83,7 @@ void Server::initAconnect(AConnect & aconnect) {
     w->set_id(i);
     w->set_x(i);
     w->set_y(i);
-    whs.emplace_back(Warehouse(i, i, i));
+    whs.push_back(Warehouse(i, i, i));
   }
   //init isAmazon
   aconnect.set_isamazon(true);
@@ -101,12 +105,10 @@ void Server::AWHandshake(AConnect & aconnect, AConnected & aconnected) {
 }
 
 void Server::connectWorld() {
-  GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   //conncect to world
   worldFD = socketConnect(worldHost, worldPort);
   initializeWorldCommunication();
-  //int serverFD = buildServer("2345");
 
   //init Aconnect
   AConnect aconnect;
@@ -125,14 +127,13 @@ void Server::connectWorld() {
 */
 void Server::initAUConnectCommand(AUCommands & aucommand) {
   //init AUConnectedToWorld
-  AUConnectedToWorld auconnect;
-  auconnect.set_worldid(worldID);
+  AUConnectedToWorld * auconnect = aucommand.add_connectedtoworld();
+  auconnect->set_worldid(worldID);
   size_t seqNum = requireSeqNum();
-  auconnect.set_seqnum(seqNum);
+  cout << "**<seqNum used>** AUConnectedToWorld: " << seqNum << endl;
+  auconnect->set_seqnum(seqNum);
 
-  //add AUConnectedToWorld to AUCommands
-  aucommand.add_connectedtoworld()->CopyFrom(auconnect);
-  aucommand.add_acks(seqNum);
+  //aucommand.add_acks(seqNum);
 }
 
 // void Server::AUHandshake(AUCommands & aucommand, UACommands & uacommand) {
@@ -178,9 +179,18 @@ void Server::processReceivedWorldMessages() {
   while(true) {
     AResponses ar;
     if (!recvMesgFrom<AResponses>(ar, worldReader.get())) {
-      return;
+      continue;
     }
+    cout << "---- start receving AResponses ------" << endl;
+    cout << ar.DebugString() << endl;
+    // if (!(ar.acks_size() && ar.arrived_size() && ar.ready_size() && ar.loaded_size() && 
+    //       ar.error_size() && ar.packagestatus_size())) {
+    //         cout << "AResponses is empty"<< endl;
+    //         cout << "---- finish receving AResponses ------" << endl;
+    //         continue;
+    //       }
     AResponseHandler handler(ar);
+    handler.printAResponse();
     handler.handle();
   }
 }
@@ -189,9 +199,19 @@ void Server::processReceivedUpsMessages() {
   while(true) {
     UACommands ar;
     if (!recvMesgFrom<UACommands>(ar, upsReader.get())) {
-      return;
+      continue;
     }
+    cout << "---- start receving UACommands ------" << endl;
+    cout << ar.DebugString() << endl;
+    // if(!(ar.acks_size() && ar.connectedtoworld_size() && ar.destinationupdated_size() &&
+    //       ar.truckarrived_size() && ar.orderdeparture_size() && ar.orderdelivered_size() &&
+    //       ar.error_size())) {
+    //         cout << "UACommands is empty"<< endl;
+    //         cout << "---- finish receving UACommands ------" << endl;
+    //         continue;
+    //       }
     AUResponseHandler handler(ar);
+    handler.printAUResponse();
     handler.handle();
   }
 }
@@ -199,10 +219,13 @@ void Server::processReceivedUpsMessages() {
 void Server::sendMessagesToWorld() {
   while(true) {
     ACommands msg;
+    cout << " worldQueue.size() is: " << worldQueue.size() << endl;
     worldQueue.wait_and_pop(msg);
-    if (!sendMesgTo(msg, worldWriter.get())) {
+    printAMessage(msg);
+    if (!sendMesgTo<ACommands>(msg, worldWriter.get())) {
       throw MyException("fail to send message in world.");
     }
+    cout << "---- finish sending ACommands ------" << endl;
   }
 
 }
@@ -211,10 +234,55 @@ void Server::sendMessagesToUps() {
   while(true) {
     AUCommands msg;
     upsQueue.wait_and_pop(msg);
-    if (!sendMesgTo(msg, upsWriter.get())) {
+    printAUMessage(msg);
+    if (!sendMesgTo<AUCommands>(msg, upsWriter.get())) {
       throw MyException("fail to send message in ups.");
     }
+    cout << "---- finish sending AUCommands ------" << endl;
   }
+}
+
+/*
+  msg log
+*/
+void Server::printAUMessage(const AUCommands & msg) {
+    cout << "---- start sending AUCommands ------" << endl;
+    cout << msg.DebugString() << endl;
+    // if (msg.connectedtoworld_size()){
+    //   cout << "connectedtoworld: "  << msg.connectedtoworld_size()  << endl;  
+    // }
+    // if(msg.ordercreated_size()) {
+    //   cout << "ordercreated: "  << msg.ordercreated_size()  << endl;
+    // }
+    // if(msg.requesttruck_size()){
+    //   cout << "requesttruck: "  << msg.requesttruck_size()  << endl;
+    // }
+    // if(msg.orderloaded_size()){
+    //   cout << "orderloaded: "  << msg.orderloaded_size()  << endl;
+    // }
+    // if(msg.acks_size()){
+    //   cout << "acks: "  << msg.acks_size() << " : ";
+    //   for(auto ack : msg.acks()) {
+    //     cout << ack << " ";
+    //   }
+    // }
+    
+}
+
+void Server::printAMessage(const ACommands & msg) {
+    cout << "---- start sending ACommands ------" << endl;
+    cout << msg.DebugString() << endl;
+    // if(msg.buy_size()) cout << "buy: "  << msg.buy_size()  << endl;
+    // if(msg.topack_size()) cout << "topack: "  << msg.topack_size()  << endl;
+    // if(msg.load_size()) cout << "load: "  << msg.load_size()  << endl;
+    // if(msg.queries_size()) cout << "quueries: "  << msg.queries_size()  << endl;
+    // if(msg.acks_size()){
+    //   cout << "acks: "  << msg.acks_size() << " : ";
+    //   for(auto ack : msg.acks()) {
+    //     cout << ack << " ";
+    //   }
+    // }
+  
 }
 
 /*
@@ -232,7 +300,7 @@ size_t Server::requireSeqNum() {
 */
 void Server::processOrderFromWeb(const int serverFD) {
     // wait to accept connection.
-    cout << "processOrderFromWeb.." << endl;
+    cout << "waiting for order from web.." << endl;
     while(true) {
       int webFD;
       string clientIP;
@@ -240,7 +308,9 @@ void Server::processOrderFromWeb(const int serverFD) {
       try {
         webFD = serverAccept(serverFD, clientIP);
         msg = recvMsg(webFD);
-        processOrder(msg, webFD);
+        //processOrder(msg, webFD);
+        thread t(processOrder, msg, webFD);
+        t.detach();
       }
       catch (const std::exception & e) {
         std::cerr << e.what() << '\n';
@@ -252,25 +322,23 @@ void Server::processOrderFromWeb(const int serverFD) {
 void Server::run() {
   try{
     connectWorld();
-    //need test
-    //connectUps();
-    //connectWeb;
-    //cout << "starting"
-    int serverFD = buildServer(webPort);
-    processOrderFromWeb(serverFD);
-    
+    connectUps();
+ 
     thread recvWorldThread(&Server::processReceivedWorldMessages, this);
     recvWorldThread.detach();
-    // thread recvUpsThread(&Server::processReceivedUpsMessages, this);
-    // recvUpsThread.detach();
+    thread recvUpsThread(&Server::processReceivedUpsMessages, this);
+    recvUpsThread.detach();
     thread sendWorldThread(&Server::sendMessagesToWorld, this);
     sendWorldThread.detach();
-    // thread sendUpsThread(&Server::sendMessagesToUps, this);
-    // sendUpsThread.detach();
+    thread sendUpsThread(&Server::sendMessagesToUps, this);
+    sendUpsThread.detach();
+
+    int serverFD = buildServer(webPort);
+    processOrderFromWeb(serverFD);
   }
   catch (const std::exception & e) {
     cerr << e.what() << endl;;
-    //close(upsFD);
+    close(upsFD);
     close(worldFD);
     return;
   }

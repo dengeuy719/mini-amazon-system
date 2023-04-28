@@ -49,28 +49,41 @@ void purchaseProduct(connection * C, int package_id,int wh_id)
 
 }
 
-
-
-
 int getOrderAddrx(connection* C, int order_id)
 {
-    nontransaction N(*C);
-    stringstream sql;
+    try
+    {
+        nontransaction N(*C);
+        stringstream sql;
 
+        sql << "SELECT ORDER_ADDR_X FROM \"ORDER\" WHERE "
+            "ORDER_ID= " << order_id << ";";
 
-    sql << "SELECT ORDER_ADDR_X FROM \"ORDER\" WHERE "
-        "ORDER_ID= " << order_id << ";";
+        // execute sql statement and get the result set
+        result order_x_result(N.exec(sql.str()));
 
+        // Check if there's a result
+        if (order_x_result.empty())
+        {
+            std::cerr << "No result found for ORDER_ID: " << order_id << std::endl;
+            return -1;
+        }
 
-    // execute sql statement and get the result set
-    result order_x_result(N.exec(sql.str()));
+        // Then we need to get the order address x from result
+        int order_x = order_x_result[0][0].as<int>();
 
+        // Close the nontransaction object
+        N.commit();
 
-    // Then we need to get inventory item amount from result R
-    int order_x = order_x_result[0][0].as<int>();
-    return order_x;
-
+        return order_x;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return -1;
+    }
 }
+
 int getOrderAddry(connection* C, int order_id)
 {
 

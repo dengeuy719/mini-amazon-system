@@ -31,6 +31,23 @@ AUResponseHandler::AUResponseHandler(const UACommands & r) {
   }
 }
 
+void AUResponseHandler::printAUResponse() {
+    if(connectedtoworld_vec.size()) cout << "UAConnectedToWorld: "  << connectedtoworld_vec.size()  << endl;
+    if(destinationupdated_vec.size()) cout << "UADestinationUpdated: "  << destinationupdated_vec.size()  << endl;
+    if(truckarrived_vec.size()) cout << "UATruckArrived: "  << truckarrived_vec.size()  << endl;
+    if(orderdeparture_vec.size()) cout << "UAOrderDeparture: "  << orderdeparture_vec.size()  << endl;
+    if(orderdeliveredv_vec.size())  cout << "UAOrderDelivered: "  << orderdeliveredv_vec.size()  << endl;
+    if(seqNums.size()){
+      cout << "acks: "  << seqNums.size()<< " : ";
+      for(auto ack : seqNums) {
+        cout << ack << " ";
+      }
+      cout << endl;
+    }
+
+    cout << "---- finish receving UACommands ------" << endl;
+}
+
 /*
   check whether given seqNum has been executed.If yes, return true,
   else return false. If given seqNum is not executed, record it in 

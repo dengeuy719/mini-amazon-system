@@ -56,6 +56,7 @@ int selectWareHouse(const vector<Warehouse> & whList, int order_addr_x, int orde
 void processOrder(string msg, int webID) {
   unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
   cout << "successfully receive order request, begin processing it.." << endl;
+  cout << "OrderID is: "<< msg <<endl;
   int orderID = stoi(msg);
   
   // determine to use which warehouse.
@@ -66,24 +67,28 @@ void processOrder(string msg, int webID) {
   int whIndex = selectWareHouse(whList, order_addr_x, order_addr_y);
   int whID = whList[whIndex].getID();
   setPackagesWhID(C.get(), orderID, whID);
-
+  cout << "finishing selecting warehouse"<< endl;
   // send back ack info to front-end
   string ackResponse = "ACK";
   sendMsg(webID, ackResponse.c_str(), ackResponse.length());
   close(webID);
-
+  cout << "finishing sending ACK to web"<< endl;
   // save order
   server.order_lck.lock();
   server.orderQueue.push(orderID);
   server.order_lck.unlock();
 
   // create APurchasemore command
+  cout << "Starting create APurchasemore" << endl;
   ACommands ac;
   APurchaseMore * ap = ac.add_buy();
   ap->set_whnum(whID);
   vector<int> packageIDs = getPackageIDs(C.get(), orderID);
+  //cout << "Starting create APurchasemore: finish getPackageIDs" << endl;
   // add seqNum to this command.
   size_t seqNum = server.requireSeqNum();
+  cout << "**<seqNum used>** Apurchasemore: " << seqNum << endl;
+  ap->set_seqnum(seqNum);
   for(auto packageID: packageIDs) {
     AProduct * aproduct = ap->add_things();
     aproduct->set_id(getPackageProductID(C.get(), packageID));
@@ -91,6 +96,7 @@ void processOrder(string msg, int webID) {
     aproduct->set_description(getPackageDesc(C.get(), packageID));
     ap->set_seqnum(seqNum);
   }
+
   pushWorldQueue(ac, seqNum);  
   Server::disConnectDB(C.get());
   cout << "Finishing receiving order request, begin processing it.." << endl;
@@ -107,6 +113,7 @@ void packOrder(int orderID, int whID) {
   // create Apack command
   ACommands acommand;
   size_t seqNum = server.requireSeqNum();
+  cout << "**<seqNum used>** packOrder: " << seqNum << endl;
   vector<int> packageIDs = getPackageIDs(C.get(), orderID);
   for(auto packageID: packageIDs) {
     APack * apack = acommand.add_topack();
@@ -119,8 +126,9 @@ void packOrder(int orderID, int whID) {
     // add seqNum to this command.
     apack->set_seqnum(seqNum);
   }
-  Server::disConnectDB(C.get());
+  cout << "inside packOrder :" << acommand.DebugString() << endl;
   pushWorldQueue(acommand, seqNum);
+  Server::disConnectDB(C.get());
   cout<<"already send Apack command to world.\n"; 
 }
 
@@ -145,7 +153,7 @@ void requestTruck(int orderID, int whID) {
   }
   AUCommands aucommand;
   int seqNum = server.requireSeqNum();
-
+  cout << "**<seqNum used>** requestTruck: " << seqNum << endl;
   //create AUOrderCreated Command
   AUOrderCreated * auordercreated = aucommand.add_ordercreated();
   auordercreated->set_orderid(orderID);
@@ -160,6 +168,7 @@ void requestTruck(int orderID, int whID) {
   aurequesttruck->set_seqnum(seqNum);
 
   pushUpsQueue(aucommand, seqNum);
+  //cout << server.upsQueue.size() << endl;
   Server::disConnectDB(C.get());
   cout<<"already send AOrderATruck command to UPS.\n"; 
 }
@@ -172,8 +181,10 @@ void requestTruck(int orderID, int whID) {
 void pushUpsQueue(const AUCommands & aucommand, int seqNum) {
   Server & server = Server::getInstance();
   while (1) {
+    cout << " upsQueue.size() is: " << server.upsQueue.size() << endl;
     server.upsQueue.push(aucommand);
-    this_thread::sleep_for(std::chrono::milliseconds(1000));
+    cout << "pushed 1 AUCommands to upsQueue, upsQueue size is " << server.upsQueue.size()<< endl;
+    this_thread::sleep_for(std::chrono::milliseconds(10000));
     if (server.seqNumTable[seqNum] == true)
       break;
   }
@@ -186,8 +197,11 @@ void pushUpsQueue(const AUCommands & aucommand, int seqNum) {
 void pushWorldQueue(const ACommands & acommand, int seqNum) {
   Server & server = Server::getInstance();
   while (1) {
+    //cout << " worldQueue.size() is: " << server.worldQueue.size() << endl;
     server.worldQueue.push(acommand);
-    this_thread::sleep_for(std::chrono::milliseconds(1000));
+    cout << "pushed 1 ACommands to worldQueue, ACommands is " << server.worldQueue.size()<< endl;
+    cout << "~~ ACommand is :" << acommand.DebugString() << " ~~" << endl;
+    this_thread::sleep_for(std::chrono::milliseconds(10000));
     if (server.seqNumTable[seqNum] == true)
       break;
   }
@@ -199,6 +213,7 @@ void pushWorldQueue(const ACommands & acommand, int seqNum) {
     (Go to the database to increase the corresponding product inventory in the corresponding warehouse)
 */
 void processPurchaseMore(const APurchaseMore & r) {
+  cout << "Begin handling AResponse: apurchasemores "<< endl;
   // get warehouse id
   int whID = r.whnum();
   // process previous saved order
@@ -207,9 +222,13 @@ void processPurchaseMore(const APurchaseMore & r) {
   int orderID = server.orderQueue.front();
   server.orderQueue.pop();
   server.order_lck.unlock();
-
-  packOrder(orderID, whID);
-  requestTruck(orderID, whID);
+  
+  // packOrder(orderID, whID);
+  // requestTruck(orderID, whID);
+  thread t1(packOrder,orderID, whID);
+  t1.detach();
+  thread t2(requestTruck,orderID, whID);
+  t2.detach();
 }
 
 /*
@@ -217,6 +236,7 @@ void processPurchaseMore(const APurchaseMore & r) {
     (Go to the database and change the order status to 'packed')
 */
 void processPacked(const APacked & r) {
+  cout << "Begin handling AResponse: apackeds "<< endl;
   //Connect the database
   unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
 
@@ -236,6 +256,7 @@ void processPacked(const APacked & r) {
     status as delivering?)
 */
 void processLoaded(const ALoaded & r) {
+  cout << "Begin handling AResponse: aloadeds "<< endl;
   //Connect the database
   unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
 
@@ -253,6 +274,7 @@ void processLoaded(const ALoaded & r) {
   // add seqNum to this command.
   Server & server = Server::getInstance();
   size_t seqNum = server.requireSeqNum();
+  cout << "**<seqNum used>** orderloaded: " << seqNum << endl;
   auOrderLoaded->set_seqnum(seqNum);
 
   cout << "start deliver order " << packageId << endl;
@@ -268,6 +290,7 @@ void processLoaded(const ALoaded & r) {
   if order status is packed, then create APutOnTruck Command and send to World
 */
 void processUAConnectedToWorld(const UAConnectedToWorld & r) {
+  cout << "Begin handling UAResponse: UAConnectedToWorld "<< endl;
   Server & server = Server::getInstance();
   if(r.worldid() != server.getWorldID()) {
     throw MyException("Error: Fail to connect to the same world");
@@ -275,6 +298,7 @@ void processUAConnectedToWorld(const UAConnectedToWorld & r) {
 }
 
 void processUADestinationUpdated(const UADestinationUpdated & r) {
+  cout << "Begin handling UAResponse: UADestinationUpdated "<< endl;
   //Connect the database
   unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
   //change this order address
@@ -288,6 +312,7 @@ void processUADestinationUpdated(const UADestinationUpdated & r) {
 }
 
 void processUATruckArrived(const UATruckArrived & r) {
+  cout << "Begin handling UAResponse: UATruckArrived "<< endl;
   //Connect the database
   unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
 
@@ -304,6 +329,7 @@ void processUATruckArrived(const UATruckArrived & r) {
   ACommands acommand;
   Server & server = Server::getInstance();
   size_t seqNum = server.requireSeqNum();
+  cout << "**<seqNum used>** APutOnTruck: " << seqNum << endl;
   for(const auto packedPackageID: packedPackageIDs) {
     APutOnTruck * aPutOnTruck = acommand.add_load();
     aPutOnTruck->set_whnum(whId);
@@ -318,6 +344,7 @@ void processUATruckArrived(const UATruckArrived & r) {
 }
 
 void processUAOrderDeparture(const UAOrderDeparture & r) {
+  cout << "Begin handling UAResponse: UAOrderDeparture "<< endl;
   //Connect the database
   unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
   //process this order status to be 'delivering'
@@ -332,6 +359,7 @@ void processUAOrderDeparture(const UAOrderDeparture & r) {
   receive UDelivered Response, change order status to be 'delivered'
 */
 void processUAOrderDelivered(const UAOrderDelivered & r) {
+  cout << "Begin handling UAResponse: UAOrderDelivered "<< endl;
   //Connect the database
   unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
 

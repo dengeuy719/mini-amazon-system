@@ -12,7 +12,6 @@ bool sendMesgTo(const T & message, google::protobuf::io::FileOutputStream * out)
   {  //extra scope: make output go away before out->Flush()
     // We create a new coded stream for each message.
     // Don’t worry, this is fast.
-    cout << "Begin sendMesgTo" << endl;
     google::protobuf::io::CodedOutputStream output(out);
     // Write the size.
     const int size = message.ByteSize();
