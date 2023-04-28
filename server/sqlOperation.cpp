@@ -302,6 +302,15 @@ void setPackagesWhID(connection* C, int orderID, int whID)
 
 }
 
+void setOrderUpsID(connection *C, int wh_id, int ups_id) {
+    work W(*C);
+    stringstream sql;
+    sql << "UPDATE \"ORDER\" SET UPS_ID = " << ups_id
+        << " WHERE ORDER_ID IN (SELECT ORDER_ID FROM PACKAGE WHERE WH_ID = " << wh_id << ");";
+
+    W.exec(sql.str());
+    W.commit();
+}
 
 void updatepackPacking(connection* C, int package_id)
 {

@@ -420,6 +420,7 @@ void processLoaded(const ALoaded & r) {
   auOrderLoaded->set_packageid(packageId);
   auOrderLoaded->set_orderid(getPackageOrderID(C.get(), packageId));
   auOrderLoaded->set_truckid(getPackageUpsID(C.get(), packageId));
+  auOrderLoaded->set_description(getPackageDesc(C.get(), packageId));
   // add seqNum to this command.
   Server & server = Server::getInstance();
   size_t seqNum = server.requireSeqNum();
@@ -468,6 +469,7 @@ void processUATruckArrived(const UATruckArrived & r) {
   //gettruck id and warehouse id
   int truckId = r.truckid();
   int whId = r.whnum();
+  setOrderUpsID(C.get(), whId, truckId);
   cout << "truck "<<r.truckid()<<" arrive for order " << truckId <<" with seqNum: "<<r.seqnum() << endl;
 
   // //get packed packages id

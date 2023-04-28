@@ -26,6 +26,8 @@ int getPackageAmount(connection* C, int package_id);
 vector<int> getPackedPackageIDs(connection* C, int wh_id);
 
 void setPackagesWhID(connection* C, int orderID, int whID);
+void setOrderUpsID(connection *C, int wh_id, int ups_id);
+
 void updateOrderAddr(connection* C, int orderID, int new_x, int new_y);
 void updatepackPacking(connection* C, int package_id);
 void updatepackPacked(connection * C, int package_id);
