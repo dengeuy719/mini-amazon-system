@@ -1,0 +1,3 @@
+1. Because we need the front-end Django server and the back-end interactive server to jointly maintain the database, and use different languages ​​for development. So after the front-end orders are successfully placed, how to notify the back-end is a problem.
+We have considered two solutions. The first one is that the backend keeps reading the database, but this will cause a lot of overhead. The second is to use the Django project as a client, send a socket request to the C++ server, and tell it the order number, indicating that the order operation has been completed.
+2. 
