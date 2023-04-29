@@ -8,10 +8,9 @@
 
 
 connection * Server::connectDB(string dbName, string userName, string password) {
-  connection * C = new connection("dbname=" + dbName + " user=" + userName +
-                                  " password=" + password);  
-//   connection * C = new connection("host=db port=5432 dbname=" + dbName + " user=" + userName +
-//                                   " password=" + password);  // use in docker
+   //connection * C = new connection("dbname=" + dbName + " user=" + userName + " password=" + password);  
+   connection * C = new connection("host=db port=5432 dbname=" + dbName + " user=" + userName +
+                                   " password=" + password);  // use in docker
   if (!C->is_open()) {
     throw MyException("Cannot open database.");
   }
@@ -25,22 +24,19 @@ void Server::disConnectDB(connection * C) {
 
 
 Server::Server() :
-  whNum(5), worldHost("vcm-30541.vm.duke.edu"), worldPort("23456"),
+  whNum(5), worldHost("vcm-30499.vm.duke.edu"), worldPort("23456"),
   worldID(), upsPort("9090"), webPort("8888"),
   seqNum(0)
 {
     cout << "Constructing server" << endl;
-    //unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
-    connection * C = new connection("dbname=mini_amazon user=postgres password=passw0rd port=5432");  
-//   connection * C =
-//       new connection("host=db port=5432 dbname=" + dbName + " user=" + userName +
-//                      " password=" + password);  // use in docker
+    //connection * C = new connection("dbname=mini_amazon user=postgres password=abcdef123 port=5432");  //used it no docker
+    connection * C =new connection("host=db port=5432 dbname= mini_amazon user= postgres password= abcdef123");  // use in docker   
     if (!C->is_open()) {
       throw MyException("Cannot open database.");
     }
-    dropAllTable(C);
-    createTable(C, "./database/tables.sql");
-    insertSampleData(C);  //for testing
+    //dropAllTable(C);
+    //createTable(C, "./database/tables.sql");
+    //insertSampleData(C);  //for testing
     C->disconnect();
     
     for (size_t i = 0; i < 65536; ++i) {

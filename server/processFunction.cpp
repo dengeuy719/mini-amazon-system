@@ -20,7 +20,7 @@ int selectWareHouse(const vector<Warehouse> &whList) {
 }
 
 void processOrder(string msg, int webID) {
-  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
+  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "abcdef123"));
   cout << "successfully receive order request, begin processing it.." << endl;
   cout << "OrderID is: "<< msg <<endl;
   int orderID = stoi(msg);
