@@ -1,5 +1,5 @@
 #include "AUResponseHandler.h"
-#include "OrderProcess.h"
+#include "processFunction.h"
 #include "gpbCommunication.h"
 #include "server.h"
 
@@ -31,37 +31,12 @@ AUResponseHandler::AUResponseHandler(const UACommands & r) {
   }
 }
 
-void AUResponseHandler::printAUResponse() {
-    if(connectedtoworld_vec.size()) cout << "UAConnectedToWorld: "  << connectedtoworld_vec.size()  << endl;
-    if(destinationupdated_vec.size()) cout << "UADestinationUpdated: "  << destinationupdated_vec.size()  << endl;
-    if(truckarrived_vec.size()) cout << "UATruckArrived: "  << truckarrived_vec.size()  << endl;
-    if(orderdeparture_vec.size()) cout << "UAOrderDeparture: "  << orderdeparture_vec.size()  << endl;
-    if(orderdeliveredv_vec.size())  cout << "UAOrderDelivered: "  << orderdeliveredv_vec.size()  << endl;
-    if(seqNums.size()){
-      cout << "acks: "  << seqNums.size()<< " : ";
-      for(auto ack : seqNums) {
-        cout << ack << " ";
-      }
-      cout << endl;
-    }
-
-    cout << "---- finish receving UACommands ------" << endl;
-}
-
-/*
-  check whether given seqNum has been executed.If yes, return true,
-  else return false. If given seqNum is not executed, record it in 
-  the executed table.
-*/
-bool AUResponseHandler::checkExecutedAndRecordIt(int seqNum) {
-  // check whether this response has been executed
-
+bool AUResponseHandler::requireUpsAckedSet(int seqNum) {
   Server & server = Server::getInstance();
-  auto it = server.executeTable_Ups.find(seqNum);
+  auto it = server.upsAckedSet.find(seqNum);
 
-  // if not exists, insert seqNum in the set, else exit
-  if (it == server.executeTable_Ups.end()) {
-    server.executeTable_Ups.insert(seqNum);
+  if (it == server.upsAckedSet.end()) {
+    server.upsAckedSet.insert(seqNum);
     return false;
   }
   else {
@@ -69,9 +44,6 @@ bool AUResponseHandler::checkExecutedAndRecordIt(int seqNum) {
   }
 }
 
-/*
-    use different threads to handle different type of responses, and ack those messages.
-*/
 void AUResponseHandler::handle() {
   // ACK responses to UPS.
   AUCommands aucommand;
@@ -82,34 +54,33 @@ void AUResponseHandler::handle() {
   Server & server = Server::getInstance();
   server.upsQueue.push(aucommand);
 
-  // use different threads to handle different responses.
   for (auto r : connectedtoworld_vec) {
-    if (checkExecutedAndRecordIt(r.seqnum()) == false) {
+    if (requireUpsAckedSet(r.seqnum()) == false) {
       thread t(processUAConnectedToWorld, r);
       t.detach();
     }
   }
   for (auto r : destinationupdated_vec) {
-    if (checkExecutedAndRecordIt(r.seqnum()) == false) {
+    if (requireUpsAckedSet(r.seqnum()) == false) {
       thread t(processUADestinationUpdated, r);
       t.detach();
     }
   }
   for (auto r : truckarrived_vec) {
-    if (checkExecutedAndRecordIt(r.seqnum()) == false) {
+    if (requireUpsAckedSet(r.seqnum()) == false) {
       thread t(processUATruckArrived, r);
       t.detach();
     }
   }
   for (auto r : orderdeparture_vec) {
-    if (checkExecutedAndRecordIt(r.seqnum()) == false) {
+    if (requireUpsAckedSet(r.seqnum()) == false) {
       thread t(processUAOrderDeparture, r);
       t.detach();
     }
   }
 
   for (auto r : orderdeliveredv_vec) {
-    if (checkExecutedAndRecordIt(r.seqnum()) == false) {
+    if (requireUpsAckedSet(r.seqnum()) == false) {
       thread t(processUAOrderDelivered, r);
       t.detach();
     }

@@ -18,10 +18,9 @@ class AResponseHandler {
   AResponseHandler(const AResponses & r);
   ~AResponseHandler() {}
   void handle();
-  void printAResponse();
 
  private:
-  bool checkExecutedAndRecordIt(int seqNum);
+  bool requireWorldAckedSet(int seqNum);
 };
 
 #endif

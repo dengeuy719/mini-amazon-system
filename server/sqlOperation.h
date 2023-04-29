@@ -1,6 +1,8 @@
 #ifndef _SQLOPERATION_H
 #define _SQLOPERATION_H
 
+#include "myException.h"
+
 #include <fstream>
 #include <iostream>
 #include <pqxx/pqxx>
@@ -9,6 +11,10 @@
 
 using namespace pqxx;
 using namespace std;
+
+void insertSampleData(connection* C);
+void createTable(connection * C, const string fileName);
+void dropAllTable(connection * C);
 
 std::vector<std::string> getPackagesfOrder(connection * C, int order_id);
 void purchaseProduct(connection * C, int package_id,int wh_id);

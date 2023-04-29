@@ -1,5 +1,65 @@
 #include "sqlOperation.h"
 
+void insertSampleData(connection* C) {
+    try {
+        work W(*C);
+
+        // Insert data into USER_PROFILE
+        W.exec("INSERT INTO USER_PROFILE (USER_NAME, ADDRX, ADDRY, UPSID) VALUES (1, '123', '456', 'UPS001'), (2, '789', '101', 'UPS002');");
+        // Insert data into PRODUCT
+        W.exec("INSERT INTO PRODUCT (PRODUCT_ID, PRODUCT_NAME, PRODUCT_DESC, PRICE, CATALOG) VALUES (1, 'Product A', 'Description A', 19.99, 'Electronics'), (2, 'Product B', 'Description B', 29.99, 'Home Appliances');");
+
+        // Insert data into ORDER
+        W.exec("INSERT INTO \"ORDER\" (ORDER_ADDR_X, ORDER_ADDR_Y, TIME, ORDER_OWNER_ID, UPS_ID, PRICE) VALUES (111, 222, '12:34:56', 1, 1001, 49.99);");
+        W.exec("INSERT INTO \"ORDER\" (ORDER_ADDR_X, ORDER_ADDR_Y, TIME, ORDER_OWNER_ID, UPS_ID, PRICE) VALUES (333, 444, '22:34:56', 2, 1002, 99.99);");
+        // Insert data into PACKAGE
+        W.exec("INSERT INTO PACKAGE (PACKAGE_DESC, PACKAGE_OWNER_ID, AMOUNT, PRODUCT_ID, WH_ID, ORDER_ID, STATUS) VALUES ('Sample Package 1', 1, 3, 1, 1, 1, 'packing');");
+        
+
+        W.commit();
+    } catch (const exception &e) {
+        cerr << e.what() << endl;
+        return;
+    }
+}
+/*
+    read sql command from the file and then create tabel using connection *C.
+    If fails, it will throw exception.
+*/
+void createTable(connection * C, string fileName) {
+  cout << "Starting create new Tables..." << endl;
+  string sql;
+  ifstream ifs(fileName.c_str(), ifstream::in);
+  if (ifs.is_open() == true) {
+    string line;
+    while (getline(ifs, line))
+      sql.append(line);
+  }
+  else {
+    throw MyException("fail to open file.");
+  }
+
+  work W(*C);
+  W.exec(sql);
+  W.commit();
+  cout << "Finishing create new Tables..." << endl;
+}
+
+/*
+    Drop all the table in the DataBase. Using for test.
+*/
+void dropAllTable(connection *C) {
+  cout << "Starting Drop all the existed table..." << endl;
+  work W(*C);
+
+  W.exec("DROP TABLE IF EXISTS PACKAGE;");
+  W.exec("DROP TABLE IF EXISTS \"ORDER\";");
+  W.exec("DROP TABLE IF EXISTS PRODUCT;");
+  W.exec("DROP TABLE IF EXISTS USER_PROFILE;");
+
+  W.commit();
+  cout << "Finishing Drop all the existed table..." << endl;
+}
 
 
 
@@ -36,17 +96,12 @@ std::vector<std::string> getPackagesfOrder(connection * C, int order_id)
 //you can use updatepackWhID and updatepackPacking to complete this fucntion individually
 void purchaseProduct(connection * C, int package_id,int wh_id)
 {
-
     work W(*C);
     stringstream sql;
-
-
     sql << "UPDATE PACKAGE SET STATUS= " << W.quote("packing") << ", WH_ID= " 
         << wh_id << " WHERE PACKAGE_ID= "<< package_id << ";";
-
     W.exec(sql.str());
     W.commit();
-
 }
 
 int getOrderAddrx(connection* C, int order_id)
@@ -55,10 +110,8 @@ int getOrderAddrx(connection* C, int order_id)
     {
         nontransaction N(*C);
         stringstream sql;
-
         sql << "SELECT ORDER_ADDR_X FROM \"ORDER\" WHERE "
             "ORDER_ID= " << order_id << ";";
-
         // execute sql statement and get the result set
         result order_x_result(N.exec(sql.str()));
 

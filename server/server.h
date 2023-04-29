@@ -10,12 +10,11 @@
 #include "gpbCommunication.h"
 #include "AResponseHandler.h"
 #include "AUResponseHandler.h"
-#include "ThreadSafe_queue.h"
+#include "msgQueue.h"
 
 using namespace std;
 using namespace pqxx;
 
-#define MAX_SEQNUM 65536
 
 class Server {
     private:
@@ -23,8 +22,6 @@ class Server {
         string worldPort;
         string worldHost;
         string upsPort;
-        string upsHost;
-        
         size_t worldID;
         int worldFD;
         int upsFD;
@@ -41,8 +38,6 @@ class Server {
         void initializeWorldCommunication();
         void initializeUpsCommunication();
         
-
-        
         //connect world
         void connectWorld();
         void initAconnect(AConnect & aconnect);
@@ -51,8 +46,8 @@ class Server {
         //connect ups
         void connectUps();
         void initAUConnectCommand(AUCommands & aucommand);
-        //void AUHandshake(AUCommands & aucommand, UACommands & uacommand);
-
+        
+        //run
         void processReceivedWorldMessages();
         void processReceivedUpsMessages();
         void sendMessagesToWorld();
@@ -65,33 +60,28 @@ class Server {
         Server(Server &) = delete;
         Server & operator=(const Server &) = delete;
 
-    public:   
-        //manage seqNum
-        vector<bool> seqNumTable;  // record whether commands with specific seqNum is acked.
-        int seqNum;          // next seqNum to be used.
-        mutex seqNum_lock;          // mutex used to lock seqNum
+    public:  
+        vector<bool> seqNumTable;  
+        int seqNum;          
+        mutex seqNum_lock;          
 
-        // Records whether a response with a specific sequence number is executed
-        // if seqNum is in executeTable, this response has been executed.
-        unordered_set<int> executeTable_World;
-        unordered_set<int> executeTable_Ups;
+        unordered_set<int> worldAckedSet;
+        unordered_set<int> upsAckedSet;
 
-        //message queue, transfer message to sending threads
-        ThreadSafe_queue<ACommands> worldQueue;
-        ThreadSafe_queue<AUCommands> upsQueue;
+        MsgQueue<ACommands> worldQueue;
+        MsgQueue<AUCommands> upsQueue;
 
-        //order queue. save orders for later processing
         queue<int> orderQueue;
         mutex order_lck;
-        size_t requireSeqNum(); 
-        vector<Warehouse> getWhs() { return whs; }
-        int getWorldID(){return worldID;}
 
-        static Server & getInstance();
         
+        static Server & getInstance();
         static connection * connectDB(string dbName, string userName, string password);
         static void disConnectDB(connection * C);
         void run();
+        size_t requireSeqNum(); 
+        vector<Warehouse> getWhs() { return whs; }
+        int getWorldID(){return worldID;}
 };
 
 #endif
