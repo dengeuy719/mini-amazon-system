@@ -16,7 +16,7 @@ int selectWareHouse(const vector<Warehouse> &whList) {
   std::mt19937 gen(rd());
   std::uniform_int_distribution<> distrib(0, whList.size() - 1);
   int index = distrib(gen);
-  return 1;
+  return index;
 }
 
 void processOrder(string msg, int webID) {
@@ -70,7 +70,7 @@ void processOrder(string msg, int webID) {
 void packOrder(int orderID, int whID) {
   cout << "begin pack order " << orderID << endl;
   Server & server = Server::getInstance();
-  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
+  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "abcdef123"));
 
   // create Apack command
   ACommands acommand;
@@ -100,7 +100,7 @@ void packOrder(int orderID, int whID) {
 */
 void requestTruck(int orderID, int whID) {
   cout << "begin call a truck for order " << orderID << endl;
-  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
+  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "abcdef123"));
   Server & server = Server::getInstance();
 
   // get warehouse information
@@ -120,7 +120,7 @@ void requestTruck(int orderID, int whID) {
   auordercreated->set_orderid(orderID);
   auordercreated->set_destinationx(getOrderAddrx(C.get(), orderID));
   auordercreated->set_destinationy(getOrderAddry(C.get(), orderID));
-  auordercreated->set_upsaccount("duke"); //optional
+  auordercreated->set_upsaccount(getOrderUPSID(C.get(),orderID)); //optional
   int seqNum_auordercreated = server.requireSeqNum();
   cout << "**<seqNum used>** auordercreated: " << seqNum_auordercreated << endl;
   auordercreated->set_seqnum(seqNum_auordercreated);
@@ -298,7 +298,7 @@ void processPurchaseMore(const APurchaseMore & r) {
 
 void processPacked(const APacked & r) {
   cout << "Begin handling AResponse: apackeds "<< endl;
-  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
+  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "abcdef123"));
   int packageId = r.shipid();
   updatepackPacked(C.get(), packageId);
   cout << "Already pack order " << packageId << endl;
@@ -307,7 +307,7 @@ void processPacked(const APacked & r) {
 
 void processLoaded(const ALoaded & r) {
   cout << "Begin handling AResponse: aloadeds "<< endl;
-  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
+  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "abcdef123"));
 
   int packageId = r.shipid();
   updatepackLoaded(C.get(), packageId);
@@ -344,7 +344,7 @@ void processUAConnectedToWorld(const UAConnectedToWorld & r) {
 
 void processUADestinationUpdated(const UADestinationUpdated & r) {
   cout << "Begin handling UAResponse: UADestinationUpdated "<< endl;
-  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
+  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "abcdef123"));
   //change this order address
   int orderID = r.orderid();
   int new_x = r.destinationx();
@@ -356,7 +356,7 @@ void processUADestinationUpdated(const UADestinationUpdated & r) {
 
 void processUATruckArrived(const UATruckArrived & r) {
   cout << "Begin handling UAResponse: UATruckArrived "<< endl;
-  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
+  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "abcdef123"));
 
   //gettruck id and warehouse id
   int truckId = r.truckid();
@@ -394,7 +394,7 @@ void processUATruckArrived(const UATruckArrived & r) {
 
 void processUAOrderDeparture(const UAOrderDeparture & r) {
   cout << "Begin handling UAResponse: UAOrderDeparture "<< endl;
-  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
+  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "abcdef123"));
   int packageId = r.packageid();
   updatepackDelivering(C.get(), packageId);
   cout << "Delivering package " << packageId << endl;
@@ -404,7 +404,7 @@ void processUAOrderDeparture(const UAOrderDeparture & r) {
 
 void processUAOrderDelivered(const UAOrderDelivered & r) {
   cout << "Begin handling UAResponse: UAOrderDelivered "<< endl;
-  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "passw0rd"));
+  unique_ptr<connection> C(Server::connectDB("mini_amazon", "postgres", "abcdef123"));
   int packageId = r.packageid();
   updatepackDelivered(C.get(), packageId);
   cout << "Already delivered order " << packageId <<" with seqNum: "<<r.seqnum()<< endl;

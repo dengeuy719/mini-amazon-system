@@ -41,11 +41,8 @@ services:
       - ./server:/code
     command: bash -c "./server"
     ports:
-      - "23456:23456" # for world
       - "8888:8888" # for web
       - "9090:9090" # for ups
-    expose:
-      - "23456"
     depends_on:
       - web
 volumes:

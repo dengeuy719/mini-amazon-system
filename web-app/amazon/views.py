@@ -40,7 +40,7 @@ def edit_my(request):
         if profile_form.is_valid():
             getAddrX = profile_form.cleaned_data['addrX']
             getAddrY = profile_form.cleaned_data['addrY']
-            getUpsID = profile_form.cleaned_data['upsID']
+            getUpsID = profile_form.cleaned_data['upsid']
 
             Logged_User.addrX = getAddrX
             Logged_User.addrY = getAddrY
@@ -110,7 +110,7 @@ def shoppingcart(request):
                 order_addr_y=place_form.cleaned_data['addrY'],
                 time = timezone.now(),
                 order_owner = profile,
-                ups_id =  place_form.cleaned_data['upsID'],
+                upsid =  place_form.cleaned_data['upsid'],
                 price = request.POST.get('total_price'))
 
             package_id_str = request.POST.get('packages')[1:-1].split(',')
@@ -144,7 +144,7 @@ def shoppingcart(request):
 @login_required
 def remove_product(request, id):
     Package.objects.filter(package_id=id,status = "open").first().delete()
-    return redirect('shoppingcart')
+    return redirect('shoppingCart')
 
 @login_required
 def place_order(request):

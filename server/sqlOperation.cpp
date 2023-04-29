@@ -159,6 +159,24 @@ int getOrderAddry(connection* C, int order_id)
 
 }
 
+string getOrderUPSID(connection* C, int order_id)
+{
+
+    nontransaction N(*C);
+    stringstream sql;
+
+
+    sql << "SELECT UPSID FROM \"ORDER\" WHERE "
+        "ORDER_ID= " << order_id << ";";
+
+
+    result ups_id_result(N.exec(sql.str()));
+    string ups_id = ups_id_result[0][0].as<string>();
+
+    return ups_id;
+
+
+}
 
 vector<int> getPackageIDs(connection* C, int order_id) {
     vector<int> package_ids;
@@ -197,6 +215,9 @@ int getPackageProductID(connection* C, int package_id)
     int product_id = product_id_result[0][0].as<int>();
 
     return product_id;
+
+
+    
 
 
 }
@@ -252,7 +273,7 @@ int getPackageUpsID(connection* C, int package_id) {
     nontransaction N(*C);
 
     stringstream sql;
-    sql << "SELECT O.UPS_ID FROM PACKAGE P "
+    sql << "SELECT O.UPSID FROM PACKAGE P "
            "JOIN \"ORDER\" O ON P.ORDER_ID = O.ORDER_ID "
            "WHERE P.PACKAGE_ID = " << package_id << ";";
 
@@ -358,7 +379,7 @@ void setPackagesWhID(connection* C, int orderID, int whID)
 void setOrderUpsID(connection *C, int wh_id, int ups_id) {
     work W(*C);
     stringstream sql;
-    sql << "UPDATE \"ORDER\" SET UPS_ID = " << ups_id
+    sql << "UPDATE \"ORDER\" SET UPSID = " << ups_id
         << " WHERE ORDER_ID IN (SELECT ORDER_ID FROM PACKAGE WHERE WH_ID = " << wh_id << ");";
 
     W.exec(sql.str());

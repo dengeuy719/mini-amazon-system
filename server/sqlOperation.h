@@ -24,7 +24,7 @@ vector<int> getPackageIDs(connection* C, int order_id);
 
 int getPackageProductID(connection* C, int package_id);
 string getPackageProductDesc(connection* C, int package_id);
-
+string getOrderUPSID(connection* C, int order_id);
 int getPackageOrderID(connection* C, int package_id);
 int getPackageUpsID(connection* C, int package_id);
 string getPackageDesc(connection* C, int package_id);

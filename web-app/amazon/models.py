@@ -6,7 +6,7 @@ class UserProfile(models.Model):
     userName = models.OneToOneField(User, on_delete=models.CASCADE)
     addrX = models.CharField(max_length=10, null=True)
     addrY = models.CharField(max_length=10, null=True)
-    upsID = models.CharField(max_length=10, null=True)
+    upsid = models.CharField(max_length=10, null=True)
 
     def get_absolute_url(self):
         return reverse('home')
@@ -29,7 +29,7 @@ class ORDER(models.Model):
     time = models.TimeField()
     order_owner = models.ForeignKey(UserProfile, on_delete=models.CASCADE,null=True)
 
-    ups_id = models.IntegerField()
+    upsid = models.CharField(max_length=10, null=True)
     price = models.FloatField(max_length=1000)
 
     class Meta:
